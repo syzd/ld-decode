@@ -46,10 +46,13 @@ public:
     qint32 getMinimumVbiFrameNumber();
     qint32 getMaximumVbiFrameNumber();
 
+    bool isValid();
+
 private:
     QVector<TbcSource*> detectionSource;
     qint32 minimumVbiFrameNumber;
     qint32 maximumVbiFrameNumber;
+    bool sourcesValid;
 };
 
 #endif // DETECTIONSOURCES_H

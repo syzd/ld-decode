@@ -34,7 +34,16 @@ MainWindow::MainWindow(QWidget *parent)
     // Defaults
     interactiveMode = false;
     reverse = false;
-    currentFrameNumber = 1;
+    currentVbiFrameNumber = 1;
+    sourcesReady = false;
+
+    // Allow the next and previous frame buttons to auto-repeat
+    ui->previousFramePushButton->setAutoRepeat(true);
+    ui->previousFramePushButton->setAutoRepeatDelay(500);
+    ui->previousFramePushButton->setAutoRepeatInterval(1);
+    ui->nextFramePushButton->setAutoRepeat(true);
+    ui->nextFramePushButton->setAutoRepeatDelay(500);
+    ui->nextFramePushButton->setAutoRepeatInterval(1);
 }
 
 MainWindow::~MainWindow()
@@ -79,7 +88,8 @@ bool MainWindow::process()
     }
 
     // Set the current frame number
-    currentFrameNumber = detectionSources.getMinimumVbiFrameNumber();
+    currentVbiFrameNumber = detectionSources.getMinimumVbiFrameNumber();
+    qDebug() << "Initial current frame number is" << currentVbiFrameNumber;
 
     // Are we running in interactive mode?
     if (interactiveMode) {
@@ -93,11 +103,17 @@ bool MainWindow::process()
         for (qint32 i = 0; i < detectionSources.getNumberOfSources(); i++) {
             sourceLabel[i] = new QLabel;
             ui->frameDisplayTabWidget->addTab(sourceLabel[i], "Source #" + QString::number(i));
-
-            // Add an image to the tab
-            updateFrameViewer(i, currentFrameNumber);
         }
 
+        // Set the GUI widget frame ranges
+        ui->frameNumberSpinBox->setRange(detectionSources.getMinimumVbiFrameNumber(), detectionSources.getMaximumVbiFrameNumber());
+        ui->frameNumberSpinBox->setValue(currentVbiFrameNumber);
+        ui->frameNumberHorizontalSlider->setRange(detectionSources.getMinimumVbiFrameNumber(), detectionSources.getMaximumVbiFrameNumber());
+        ui->frameNumberHorizontalSlider->setValue(currentVbiFrameNumber);
+
+        // Add an image to the current source tab
+        sourcesReady = true;
+        updateFrameViewer();
     } else {
         // Non-interactive mode
         quit();
@@ -107,9 +123,85 @@ bool MainWindow::process()
 }
 
 // Update a source frame viewer with a frame image
-void MainWindow::updateFrameViewer(qint32 sourceNumber, qint32 frameNumber)
+void MainWindow::updateFrameViewer()
 {
-    qDebug() << "Updated frame viewer for source" << sourceNumber << "frame number" << frameNumber;
-    QImage frameImage = detectionSources.getDetectionSource(sourceNumber)->getFrameData(frameNumber);
-    sourceLabel[sourceNumber]->setPixmap(QPixmap::fromImage(frameImage));
+    qint32 sourceNumber = ui->frameDisplayTabWidget->currentIndex();
+
+    if (sourceNumber >= 0) {
+        qDebug() << "Updating frame viewer for source" << sourceNumber << "VBI frame number" << currentVbiFrameNumber;
+        QImage frameImage = detectionSources.getDetectionSource(sourceNumber)->getFrameData(currentVbiFrameNumber);
+
+//        // Highlight dropouts
+//        if (true) {
+//            // Get the frame dropout data
+//            TbcSource::DropOuts dropOuts = detectionSources.getDetectionSource(sourceNumber)->getFrameDropouts(currentVbiFrameNumber);
+
+//            // Create a painter object
+//            QPainter imagePainter;
+//            imagePainter.begin(&frameImage);
+
+//            // Draw the drop out data for the frame
+//            imagePainter.setPen(Qt::red);
+//            for (qint32 dropOutIndex = 0; dropOutIndex < dropOuts.startx.size(); dropOutIndex++) {
+//                qint32 startx = dropOuts.startx[dropOutIndex];
+//                qint32 endx = dropOuts.endx[dropOutIndex];
+//                qint32 frameLine = dropOuts.frameLine[dropOutIndex] - 1; // Frame line is from 1
+
+//                imagePainter.drawLine(startx, frameLine, endx, frameLine);
+//            }
+
+//            // End the painter object
+//            imagePainter.end();
+//        }
+
+        // Display the QImage in the GUI
+        sourceLabel[sourceNumber]->setPixmap(QPixmap::fromImage(frameImage));
+    }
+}
+
+// GUI action slots ---------------------------------------------------------------------------------------------------
+
+void MainWindow::on_frameNumberSpinBox_editingFinished()
+{
+    currentVbiFrameNumber = ui->frameNumberSpinBox->value();
+    ui->frameNumberHorizontalSlider->setValue(currentVbiFrameNumber);
+}
+
+void MainWindow::on_previousFramePushButton_clicked()
+{
+    currentVbiFrameNumber--;
+    if (currentVbiFrameNumber < detectionSources.getMinimumVbiFrameNumber()) currentVbiFrameNumber = detectionSources.getMinimumVbiFrameNumber();
+
+    ui->frameNumberSpinBox->setValue(currentVbiFrameNumber);
+    ui->frameNumberHorizontalSlider->setValue(currentVbiFrameNumber);
+}
+
+void MainWindow::on_nextFramePushButton_clicked()
+{
+    currentVbiFrameNumber++;
+    if (currentVbiFrameNumber > detectionSources.getMaximumVbiFrameNumber()) currentVbiFrameNumber = detectionSources.getMaximumVbiFrameNumber();
+
+    ui->frameNumberSpinBox->setValue(currentVbiFrameNumber);
+    ui->frameNumberHorizontalSlider->setValue(currentVbiFrameNumber);
+}
+
+void MainWindow::on_frameNumberHorizontalSlider_valueChanged(int value)
+{
+    (void)value;
+
+    currentVbiFrameNumber = ui->frameNumberHorizontalSlider->value();
+    ui->frameNumberSpinBox->setValue(currentVbiFrameNumber);
+
+    if (sourcesReady) updateFrameViewer();
+}
+
+void MainWindow::on_frameDisplayTabWidget_currentChanged(int index)
+{
+    qDebug() << "Action tab changed - new index is" << index;
+    if (sourcesReady) updateFrameViewer();
+}
+
+void MainWindow::on_actionExit_triggered()
+{
+    quit();
 }

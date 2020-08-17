@@ -36,6 +36,14 @@
 class TbcSource
 {
 public:
+
+    // Drop-outs metadata definition
+    struct DropOuts {
+        QVector<qint32> startx;
+        QVector<qint32> endx;
+        QVector<qint32> frameLine;
+    };
+
     TbcSource();
     ~TbcSource();
 
@@ -52,7 +60,8 @@ public:
     qint32 getEndVbiFrame();
     qint32 getNumberOfFrames();
 
-    QImage getFrameData(qint32 frameNumber);
+    QImage getFrameData(qint32 vbiFrameNumber);
+    DropOuts getFrameDropouts(qint32 vbiFrameNumber);
 
 private:
     bool isSourceValid;
@@ -66,7 +75,7 @@ private:
 
     void defaults();
     bool determineDiscTypeAndFrames();
-    qint32 convertVbiFrameNumberToSequential(qint32 frameNumber);
+    qint32 convertVbiFrameNumberToSequential(qint32 vbiFrameNumber);
 };
 
 #endif // TBCSOURCE_H

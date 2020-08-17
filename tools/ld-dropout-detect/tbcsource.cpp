@@ -247,14 +247,51 @@ qint32 TbcSource::getNumberOfFrames()
 }
 
 // Method to convert a VBI frame number to a sequential frame number
-qint32 TbcSource::convertVbiFrameNumberToSequential(qint32 frameNumber)
+qint32 TbcSource::convertVbiFrameNumberToSequential(qint32 vbiFrameNumber)
 {
     // Offset the VBI frame number to get the sequential source frame number
-    return frameNumber - getStartVbiFrame() + 1;
+    return vbiFrameNumber - getStartVbiFrame() + 1;
+}
+
+// Get the drop out data for the requested VBI frame
+// Gets data for both fields and combines it into a single frame
+TbcSource::DropOuts TbcSource::getFrameDropouts(qint32 vbiFrameNumber)
+{
+    DropOuts dropOuts;
+
+    // Range check the requested frame number
+    if (vbiFrameNumber > getEndVbiFrame() || vbiFrameNumber < getStartVbiFrame()) {
+        qWarning() << "Requested frame number is out of range for TBC source";
+        return dropOuts;
+    }
+
+    // Get the first and second field dropout data
+    qDebug() << "Requesting field dropout data for frame number" << vbiFrameNumber << "- sequential frame" << convertVbiFrameNumberToSequential(vbiFrameNumber);
+    LdDecodeMetaData::DropOuts firstFieldDropOuts = ldDecodeMetaData.getFieldDropOuts(ldDecodeMetaData.getFirstFieldNumber(convertVbiFrameNumberToSequential(vbiFrameNumber)));
+    LdDecodeMetaData::DropOuts secondFieldDropOuts = ldDecodeMetaData.getFieldDropOuts(ldDecodeMetaData.getSecondFieldNumber(convertVbiFrameNumberToSequential(vbiFrameNumber)));
+
+    // Odd lines
+    for (qint32 i = 0; i < firstFieldDropOuts.startx.size(); i++) {
+        DropOuts tmpDo;
+        dropOuts.startx.append(firstFieldDropOuts.startx[i]);
+        dropOuts.endx.append(firstFieldDropOuts.endx[i]);
+        dropOuts.frameLine.append((firstFieldDropOuts.fieldLine[i] * 2) - 1);
+    }
+
+    // Even lines
+    for (qint32 i = 0; i < secondFieldDropOuts.startx.size(); i++) {
+        DropOuts tmpDo;
+        dropOuts.startx.append(secondFieldDropOuts.startx[i]);
+        dropOuts.endx.append(secondFieldDropOuts.endx[i]);
+        dropOuts.frameLine.append((secondFieldDropOuts.fieldLine[i] * 2));
+    }
+
+    qDebug() << "VBI frame number" << vbiFrameNumber << "contains" << dropOuts.startx.size() << "dropout records";
+    return dropOuts;
 }
 
 // Generate a QImage of the requested VBI frame
-QImage TbcSource::getFrameData(qint32 frameNumber)
+QImage TbcSource::getFrameData(qint32 vbiFrameNumber)
 {
     // Get the metadata for the video parameters
     LdDecodeMetaData::VideoParameters videoParameters = ldDecodeMetaData.getVideoParameters();
@@ -263,21 +300,27 @@ QImage TbcSource::getFrameData(qint32 frameNumber)
     qint32 frameHeight = (videoParameters.fieldHeight * 2) - 1;
 
     // Show debug information
-    qDebug().nospace() << "Generating a QImage from frame " << frameNumber <<
+    qDebug().nospace() << "Generating a QImage from frame " << vbiFrameNumber <<
                 " (" << videoParameters.fieldWidth << "x" << frameHeight << ")";
 
     // Create a QImage
     QImage frameImage = QImage(videoParameters.fieldWidth, frameHeight, QImage::Format_RGB888);
 
     // Range check the requested frame number
-    if (frameNumber > getEndVbiFrame() || frameNumber < getStartVbiFrame()) {
+    if (vbiFrameNumber > getEndVbiFrame() || vbiFrameNumber < getStartVbiFrame()) {
         qWarning() << "Requested frame number is out of range for TBC source";
         return frameImage;
     }
 
     // Get pointers to the 16-bit greyscale data
-    const quint16 *firstFieldPointer = sourceVideo.getVideoField(ldDecodeMetaData.getFirstFieldNumber(convertVbiFrameNumberToSequential(frameNumber))).data();
-    const quint16 *secondFieldPointer = sourceVideo.getVideoField(ldDecodeMetaData.getSecondFieldNumber(convertVbiFrameNumberToSequential(frameNumber))).data();
+    qint32 firstField = ldDecodeMetaData.getFirstFieldNumber(convertVbiFrameNumberToSequential(vbiFrameNumber));
+    qint32 secondField = ldDecodeMetaData.getSecondFieldNumber(convertVbiFrameNumberToSequential(vbiFrameNumber));
+
+    qDebug() << "Requesting field data for frame number" << vbiFrameNumber << "- sequential frame" << convertVbiFrameNumberToSequential(vbiFrameNumber);
+    qDebug() << "Fields" << firstField << "/" << secondField << "- total of" << sourceVideo.getNumberOfAvailableFields() << "fields available";
+
+    const quint16 *firstFieldPointer = sourceVideo.getVideoField(firstField).data();
+    const quint16 *secondFieldPointer = sourceVideo.getVideoField(secondField).data();
 
     // Copy the raw 16-bit grayscale data into the RGB888 QImage
     for (qint32 y = 0; y < frameHeight; y++) {

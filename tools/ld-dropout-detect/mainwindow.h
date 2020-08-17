@@ -27,6 +27,7 @@
 
 #include <QMainWindow>
 #include <QLabel>
+#include <QPainter>
 #include "detectionsources.h"
 
 QT_BEGIN_NAMESPACE
@@ -45,16 +46,25 @@ public:
     void quit();
     bool process();
 
+private slots:
+    void on_frameNumberSpinBox_editingFinished();
+    void on_previousFramePushButton_clicked();
+    void on_nextFramePushButton_clicked();
+    void on_frameNumberHorizontalSlider_valueChanged(int value);
+    void on_frameDisplayTabWidget_currentChanged(int index);
+    void on_actionExit_triggered();
+
 private:
     Ui::MainWindow *ui;
 
     bool interactiveMode;
     bool reverse;
+    bool sourcesReady;
     QVector<QString> inputFilenames;
     DetectionSources detectionSources;
     QVector<QLabel*> sourceLabel;
-    qint32 currentFrameNumber;
+    qint32 currentVbiFrameNumber;
 
-    void updateFrameViewer(qint32 sourceNumber, qint32 frameNumber);
+    void updateFrameViewer();
 };
 #endif // MAINWINDOW_H
