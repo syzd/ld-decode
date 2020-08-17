@@ -110,8 +110,9 @@ int main(int argc, char *argv[])
     if (interactiveMode) w.show();
 
     // Process the TBC source files
-    if (!w.process()) return 1;
+    if (!w.process()) {
+        qDebug() << "Processing exited with failure";
+    }
 
-    if (interactiveMode) return a.exec();
-    return 0;
+    return a.exec();
 }

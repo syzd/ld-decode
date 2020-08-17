@@ -43,8 +43,13 @@ public:
     qint32 getNumberOfSources();
     void setReverseFieldOrder();
 
+    qint32 getMinimumVbiFrameNumber();
+    qint32 getMaximumVbiFrameNumber();
+
 private:
     QVector<TbcSource*> detectionSource;
+    qint32 minimumVbiFrameNumber;
+    qint32 maximumVbiFrameNumber;
 };
 
 #endif // DETECTIONSOURCES_H

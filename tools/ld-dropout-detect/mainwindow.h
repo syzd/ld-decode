@@ -26,6 +26,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QLabel>
 #include "detectionsources.h"
 
 QT_BEGIN_NAMESPACE
@@ -41,6 +42,7 @@ public:
     ~MainWindow();
 
     void configure(bool _interactiveMode, bool _reverse, QVector<QString> _inputFilenames);
+    void quit();
     bool process();
 
 private:
@@ -50,5 +52,9 @@ private:
     bool reverse;
     QVector<QString> inputFilenames;
     DetectionSources detectionSources;
+    QVector<QLabel*> sourceLabel;
+    qint32 currentFrameNumber;
+
+    void updateFrameViewer(qint32 sourceNumber, qint32 frameNumber);
 };
 #endif // MAINWINDOW_H

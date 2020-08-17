@@ -26,6 +26,8 @@
 
 DetectionSources::DetectionSources()
 {
+    minimumVbiFrameNumber = 1000000;
+    maximumVbiFrameNumber = 0;
 }
 
 DetectionSources::~DetectionSources()
@@ -71,6 +73,10 @@ bool DetectionSources::open(QVector<QString> inputFilenames)
             }
         }
 
+        // Set the max and min available VBI frame numbers
+        if (detectionSource[i]->getStartVbiFrame() < minimumVbiFrameNumber) minimumVbiFrameNumber = detectionSource[i]->getStartVbiFrame();
+        if (detectionSource[i]->getEndVbiFrame() < maximumVbiFrameNumber) maximumVbiFrameNumber = detectionSource[i]->getEndVbiFrame();
+
         // Show some information about the source TBC
         qInfo().nospace() << "Open TBC source #" << i << " with filename of " << inputFilenames[i];
         qInfo().nospace() << "  Source has " << detectionSource[i]->getNumberOfFrames() << " frames." <<
@@ -78,7 +84,9 @@ bool DetectionSources::open(QVector<QString> inputFilenames)
                              " and end frame is " << detectionSource[i]->getEndVbiFrame();
     }
 
+    // TODO
     // Verify that all sources are the same disc type
+    // Display overall available range of VBI frames
 
     return true;
 }
@@ -112,4 +120,16 @@ void DetectionSources::setReverseFieldOrder()
     for (qint32 i = 0; i < detectionSource.size(); i++) {
         detectionSource[i]->setReverseFieldOrder();
     }
+}
+
+// Get the minimum available VBI frame number based on all available sources
+qint32 DetectionSources::getMinimumVbiFrameNumber()
+{
+    return minimumVbiFrameNumber;
+}
+
+// Get the maximum available VBI frame number based on all available sources
+qint32 DetectionSources::getMaximumVbiFrameNumber()
+{
+    return maximumVbiFrameNumber;
 }

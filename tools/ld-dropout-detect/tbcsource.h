@@ -28,6 +28,7 @@
 #include <QApplication>
 #include <QDebug>
 #include <QtGlobal>
+#include <QImage>
 
 #include "sourcevideo.h"
 #include "lddecodemetadata.h"
@@ -38,7 +39,7 @@ public:
     TbcSource();
     ~TbcSource();
 
-    bool open(QString inputFilename);
+    bool open(QString _inputFilename);
     void close();
 
     bool isValid();
@@ -51,17 +52,21 @@ public:
     qint32 getEndVbiFrame();
     qint32 getNumberOfFrames();
 
+    QImage getFrameData(qint32 frameNumber);
+
 private:
     bool isSourceValid;
     bool isSourceCav;
     qint32 startVbiFrame;
     qint32 endVbiFrame;
+    QString inputFilename;
 
     SourceVideo sourceVideo;
     LdDecodeMetaData ldDecodeMetaData;
 
     void defaults();
     bool determineDiscTypeAndFrames();
+    qint32 convertVbiFrameNumberToSequential(qint32 frameNumber);
 };
 
 #endif // TBCSOURCE_H

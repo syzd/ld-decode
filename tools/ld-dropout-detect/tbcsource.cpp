@@ -34,6 +34,7 @@ TbcSource::~TbcSource()
     close();
 }
 
+// Set defaults
 void TbcSource::defaults()
 {
     isSourceValid = false;
@@ -42,13 +43,17 @@ void TbcSource::defaults()
     endVbiFrame = 0;
 }
 
-bool TbcSource::open(QString inputFilename)
+// Open a TBC source file
+bool TbcSource::open(QString _inputFilename)
 {
     // If source is already valid, close it before replacing it
     if (isSourceValid) {
         close();
         defaults();
     }
+
+    // Store the filename
+    inputFilename = _inputFilename;
 
     // Open the TBC metadata file
     qDebug() << "Processing JSON metadata for" << inputFilename;
@@ -184,14 +189,17 @@ bool TbcSource::determineDiscTypeAndFrames()
     return true;
 }
 
+// Close a TBC source file
 void TbcSource::close()
 {
     if (isSourceValid) {
+        qInfo() << "Closing source with filename" << inputFilename;
         sourceVideo.close();
         defaults();
     }
 }
 
+// Returns true if the TBC source file is valid
 bool TbcSource::isValid()
 {
     return isSourceValid;
@@ -209,6 +217,7 @@ bool TbcSource::isPal()
     return ldDecodeMetaData.getVideoParameters().isSourcePal;
 }
 
+// Set second field first
 void TbcSource::setReverseFieldOrder()
 {
     if (isSourceValid) {
@@ -216,20 +225,78 @@ void TbcSource::setReverseFieldOrder()
     }
 }
 
+// Get the lowest available VBI frame number
 qint32 TbcSource::getStartVbiFrame()
 {
     if (!isSourceValid) return -1;
     return startVbiFrame;
 }
 
+// Get the highest available VBI frame number
 qint32 TbcSource::getEndVbiFrame()
 {
     if (!isSourceValid) return -1;
     return endVbiFrame;
 }
 
+// Get the number of available frames
 qint32 TbcSource::getNumberOfFrames()
 {
     if (!isSourceValid) return -1;
     return endVbiFrame - startVbiFrame + 1;
+}
+
+// Method to convert a VBI frame number to a sequential frame number
+qint32 TbcSource::convertVbiFrameNumberToSequential(qint32 frameNumber)
+{
+    // Offset the VBI frame number to get the sequential source frame number
+    return frameNumber - getStartVbiFrame() + 1;
+}
+
+// Generate a QImage of the requested VBI frame
+QImage TbcSource::getFrameData(qint32 frameNumber)
+{
+    // Get the metadata for the video parameters
+    LdDecodeMetaData::VideoParameters videoParameters = ldDecodeMetaData.getVideoParameters();
+
+    // Calculate the frame height
+    qint32 frameHeight = (videoParameters.fieldHeight * 2) - 1;
+
+    // Show debug information
+    qDebug().nospace() << "Generating a QImage from frame " << frameNumber <<
+                " (" << videoParameters.fieldWidth << "x" << frameHeight << ")";
+
+    // Create a QImage
+    QImage frameImage = QImage(videoParameters.fieldWidth, frameHeight, QImage::Format_RGB888);
+
+    // Range check the requested frame number
+    if (frameNumber > getEndVbiFrame() || frameNumber < getStartVbiFrame()) {
+        qWarning() << "Requested frame number is out of range for TBC source";
+        return frameImage;
+    }
+
+    // Get pointers to the 16-bit greyscale data
+    const quint16 *firstFieldPointer = sourceVideo.getVideoField(ldDecodeMetaData.getFirstFieldNumber(convertVbiFrameNumberToSequential(frameNumber))).data();
+    const quint16 *secondFieldPointer = sourceVideo.getVideoField(ldDecodeMetaData.getSecondFieldNumber(convertVbiFrameNumberToSequential(frameNumber))).data();
+
+    // Copy the raw 16-bit grayscale data into the RGB888 QImage
+    for (qint32 y = 0; y < frameHeight; y++) {
+        for (qint32 x = 0; x < videoParameters.fieldWidth; x++) {
+            // Take just the MSB of the input data
+            qint32 pixelOffset = (videoParameters.fieldWidth * (y / 2)) + x;
+            uchar pixelValue;
+            if (y % 2) {
+                pixelValue = static_cast<uchar>(secondFieldPointer[pixelOffset] / 256);
+            } else {
+                pixelValue = static_cast<uchar>(firstFieldPointer[pixelOffset] / 256);
+            }
+
+            qint32 xpp = x * 3;
+            *(frameImage.scanLine(y) + xpp + 0) = static_cast<uchar>(pixelValue); // R
+            *(frameImage.scanLine(y) + xpp + 1) = static_cast<uchar>(pixelValue); // G
+            *(frameImage.scanLine(y) + xpp + 2) = static_cast<uchar>(pixelValue); // B
+        }
+    }
+
+    return frameImage;
 }
