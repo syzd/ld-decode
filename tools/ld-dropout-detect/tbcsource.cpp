@@ -312,28 +312,21 @@ QImage TbcSource::getFrameData(qint32 vbiFrameNumber)
         return frameImage;
     }
 
-    // Get pointers to the 16-bit greyscale data
-    qint32 firstField = ldDecodeMetaData.getFirstFieldNumber(convertVbiFrameNumberToSequential(vbiFrameNumber));
-    qint32 secondField = ldDecodeMetaData.getSecondFieldNumber(convertVbiFrameNumberToSequential(vbiFrameNumber));
-
     qDebug() << "Requesting field data for frame number" << vbiFrameNumber << "- sequential frame" << convertVbiFrameNumberToSequential(vbiFrameNumber);
-    qDebug() << "Fields" << firstField << "/" << secondField << "- total of" << sourceVideo.getNumberOfAvailableFields() << "fields available";
 
-    const quint16 *firstFieldPointer = sourceVideo.getVideoField(firstField).data();
-    const quint16 *secondFieldPointer = sourceVideo.getVideoField(secondField).data();
+    // Get the field data
+    SourceVideo::Data firstFieldData = sourceVideo.getVideoField(ldDecodeMetaData.getFirstFieldNumber(convertVbiFrameNumberToSequential(vbiFrameNumber)));
+    SourceVideo::Data secondFieldData = sourceVideo.getVideoField(ldDecodeMetaData.getSecondFieldNumber(convertVbiFrameNumberToSequential(vbiFrameNumber)));
 
     // Copy the raw 16-bit grayscale data into the RGB888 QImage
     for (qint32 y = 0; y < frameHeight; y++) {
         for (qint32 x = 0; x < videoParameters.fieldWidth; x++) {
-            // Take just the MSB of the input data
-            qint32 pixelOffset = (videoParameters.fieldWidth * (y / 2)) + x;
-            uchar pixelValue;
-            if (y % 2) {
-                pixelValue = static_cast<uchar>(secondFieldPointer[pixelOffset] / 256);
-            } else {
-                pixelValue = static_cast<uchar>(firstFieldPointer[pixelOffset] / 256);
-            }
+            // Get the 16-bit value and convert to 8-bit
+            quint16 pixelValue;
+            if (y % 2) pixelValue = secondFieldData[(videoParameters.fieldWidth * (y / 2)) + x] / 256;
+            else pixelValue = firstFieldData[(videoParameters.fieldWidth * (y / 2)) + x] / 256;
 
+            // Place the 8-bit value into the output QImage
             qint32 xpp = x * 3;
             *(frameImage.scanLine(y) + xpp + 0) = static_cast<uchar>(pixelValue); // R
             *(frameImage.scanLine(y) + xpp + 1) = static_cast<uchar>(pixelValue); // G

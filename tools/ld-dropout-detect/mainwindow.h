@@ -54,6 +54,8 @@ private slots:
     void on_frameDisplayTabWidget_currentChanged(int index);
     void on_actionExit_triggered();
 
+    void on_overlayComboBox_currentIndexChanged(const QString &arg1);
+
 private:
     Ui::MainWindow *ui;
 
@@ -65,6 +67,7 @@ private:
     QVector<QLabel*> sourceLabel;
     qint32 currentVbiFrameNumber;
 
+    void initialiseGui();
     void updateFrameViewer();
 };
 #endif // MAINWINDOW_H

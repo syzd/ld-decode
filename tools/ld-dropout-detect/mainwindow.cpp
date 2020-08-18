@@ -31,6 +31,18 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
+    initialiseGui();
+}
+
+MainWindow::~MainWindow()
+{
+    // Might need to delete sourceLabel objects here?
+
+    delete ui;
+}
+
+void MainWindow::initialiseGui()
+{
     // Defaults
     interactiveMode = false;
     reverse = false;
@@ -44,13 +56,10 @@ MainWindow::MainWindow(QWidget *parent)
     ui->nextFramePushButton->setAutoRepeat(true);
     ui->nextFramePushButton->setAutoRepeatDelay(500);
     ui->nextFramePushButton->setAutoRepeatInterval(1);
-}
 
-MainWindow::~MainWindow()
-{
-    // Might need to delete sourceLabel objects here?
-
-    delete ui;
+    // Set up overlay mode combobox
+    ui->overlayComboBox->addItem("None");
+    ui->overlayComboBox->addItem("Current dropouts");
 }
 
 void MainWindow::configure(bool _interactiveMode, bool _reverse, QVector<QString> _inputFilenames)
@@ -131,28 +140,28 @@ void MainWindow::updateFrameViewer()
         qDebug() << "Updating frame viewer for source" << sourceNumber << "VBI frame number" << currentVbiFrameNumber;
         QImage frameImage = detectionSources.getDetectionSource(sourceNumber)->getFrameData(currentVbiFrameNumber);
 
-//        // Highlight dropouts
-//        if (true) {
-//            // Get the frame dropout data
-//            TbcSource::DropOuts dropOuts = detectionSources.getDetectionSource(sourceNumber)->getFrameDropouts(currentVbiFrameNumber);
+        // Highlight dropouts
+        if (ui->overlayComboBox->currentText() == "Current dropouts") {
+            // Get the frame dropout data
+            TbcSource::DropOuts dropOuts = detectionSources.getDetectionSource(sourceNumber)->getFrameDropouts(currentVbiFrameNumber);
 
-//            // Create a painter object
-//            QPainter imagePainter;
-//            imagePainter.begin(&frameImage);
+            // Create a painter object
+            QPainter imagePainter;
+            imagePainter.begin(&frameImage);
 
-//            // Draw the drop out data for the frame
-//            imagePainter.setPen(Qt::red);
-//            for (qint32 dropOutIndex = 0; dropOutIndex < dropOuts.startx.size(); dropOutIndex++) {
-//                qint32 startx = dropOuts.startx[dropOutIndex];
-//                qint32 endx = dropOuts.endx[dropOutIndex];
-//                qint32 frameLine = dropOuts.frameLine[dropOutIndex] - 1; // Frame line is from 1
+            // Draw the drop out data for the frame
+            imagePainter.setPen(Qt::red);
+            for (qint32 dropOutIndex = 0; dropOutIndex < dropOuts.startx.size(); dropOutIndex++) {
+                qint32 startx = dropOuts.startx[dropOutIndex];
+                qint32 endx = dropOuts.endx[dropOutIndex];
+                qint32 frameLine = dropOuts.frameLine[dropOutIndex] - 1; // Frame line is from 1
 
-//                imagePainter.drawLine(startx, frameLine, endx, frameLine);
-//            }
+                imagePainter.drawLine(startx, frameLine, endx, frameLine);
+            }
 
-//            // End the painter object
-//            imagePainter.end();
-//        }
+            // End the painter object
+            imagePainter.end();
+        }
 
         // Display the QImage in the GUI
         sourceLabel[sourceNumber]->setPixmap(QPixmap::fromImage(frameImage));
@@ -204,4 +213,10 @@ void MainWindow::on_frameDisplayTabWidget_currentChanged(int index)
 void MainWindow::on_actionExit_triggered()
 {
     quit();
+}
+
+void MainWindow::on_overlayComboBox_currentIndexChanged(const QString &arg1)
+{
+    (void)arg1;
+    if (sourcesReady) updateFrameViewer();
 }
