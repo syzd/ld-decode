@@ -60,6 +60,11 @@ void MainWindow::initialiseGui()
     // Set up overlay mode combobox
     ui->overlayComboBox->addItem("None");
     ui->overlayComboBox->addItem("Current dropouts");
+    // Single source clip analysis
+    // luma/chroma diff
+    // luma diff
+    // chroma diff
+    // others?
 }
 
 void MainWindow::configure(bool _interactiveMode, bool _reverse, QVector<QString> _inputFilenames)
@@ -106,10 +111,10 @@ bool MainWindow::process()
         ui->frameDisplayTabWidget->clear();
 
         // Generate a display widget for each source
-        sourceLabel.resize(detectionSources.getNumberOfSources());
+        sourceLabel.resize(detectionSources.getTotalNumberOfSources());
 
         // Add a tab for each available source
-        for (qint32 i = 0; i < detectionSources.getNumberOfSources(); i++) {
+        for (qint32 i = 0; i < detectionSources.getTotalNumberOfSources(); i++) {
             sourceLabel[i] = new QLabel;
             ui->frameDisplayTabWidget->addTab(sourceLabel[i], "Source #" + QString::number(i));
         }

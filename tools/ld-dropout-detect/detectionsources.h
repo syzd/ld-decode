@@ -40,7 +40,8 @@ public:
     bool open(QVector<QString> inputFilenames);
     void close();
     TbcSource *getDetectionSource(qint32 sourceNumber);
-    qint32 getNumberOfSources();
+    qint32 getTotalNumberOfSources();
+    qint32 getNumberOfSourcesForFrame(qint32 vbiFrameNumber);
     void setReverseFieldOrder();
 
     qint32 getMinimumVbiFrameNumber();

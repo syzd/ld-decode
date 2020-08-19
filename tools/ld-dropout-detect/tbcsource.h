@@ -59,6 +59,7 @@ public:
     qint32 getStartVbiFrame();
     qint32 getEndVbiFrame();
     qint32 getNumberOfFrames();
+    bool isFrameAvailable(qint32 vbiFrameNumber);
 
     QImage getFrameData(qint32 vbiFrameNumber);
     DropOuts getFrameDropouts(qint32 vbiFrameNumber);

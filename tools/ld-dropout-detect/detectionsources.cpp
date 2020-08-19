@@ -111,9 +111,21 @@ TbcSource* DetectionSources::getDetectionSource(qint32 sourceNumber)
     return detectionSource[sourceNumber];
 }
 
-qint32 DetectionSources::getNumberOfSources()
+// Return the total number of available sources (i.e. the number of TBC files available)
+qint32 DetectionSources::getTotalNumberOfSources()
 {
     return detectionSource.size();
+}
+
+// Return the total number of available sources for a VBI frame number
+qint32 DetectionSources::getNumberOfSourcesForFrame(qint32 vbiFrameNumber)
+{
+    qint32 count = 0;
+    for (qint32 i = 0; i < getTotalNumberOfSources(); i++) {
+        if (detectionSource[i]->isFrameAvailable(vbiFrameNumber)) count++;
+    }
+
+    return count;
 }
 
 // Set all sources to reversed field order
