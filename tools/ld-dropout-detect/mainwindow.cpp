@@ -143,12 +143,12 @@ void MainWindow::updateFrameViewer()
 
     if (sourceNumber >= 0) {
         qDebug() << "Updating frame viewer for source" << sourceNumber << "VBI frame number" << currentVbiFrameNumber;
-        QImage frameImage = detectionSources.getDetectionSource(sourceNumber)->getFrameData(currentVbiFrameNumber);
+        QImage frameImage = detectionSources.getDetectionSource(sourceNumber)->getFrameImage(currentVbiFrameNumber);
 
         // Highlight dropouts
         if (ui->overlayComboBox->currentText() == "Current dropouts") {
             // Get the frame dropout data
-            TbcSource::DropOuts dropOuts = detectionSources.getDetectionSource(sourceNumber)->getFrameDropouts(currentVbiFrameNumber);
+            Dropouts dropouts = detectionSources.getDetectionSource(sourceNumber)->getFrameDropouts(currentVbiFrameNumber);
 
             // Create a painter object
             QPainter imagePainter;
@@ -156,12 +156,9 @@ void MainWindow::updateFrameViewer()
 
             // Draw the drop out data for the frame
             imagePainter.setPen(Qt::red);
-            for (qint32 dropOutIndex = 0; dropOutIndex < dropOuts.startx.size(); dropOutIndex++) {
-                qint32 startx = dropOuts.startx[dropOutIndex];
-                qint32 endx = dropOuts.endx[dropOutIndex];
-                qint32 frameLine = dropOuts.frameLine[dropOutIndex] - 1; // Frame line is from 1
-
-                imagePainter.drawLine(startx, frameLine, endx, frameLine);
+            for (qint32 dropoutIndex = 0; dropoutIndex < dropouts.size(); dropoutIndex++) {
+                imagePainter.drawLine(dropouts.startx()[dropoutIndex], dropouts.frameLine()[dropoutIndex] - 1,
+                                      dropouts.endx()[dropoutIndex], dropouts.frameLine()[dropoutIndex] - 1);
             }
 
             // End the painter object

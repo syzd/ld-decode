@@ -20,6 +20,7 @@ SOURCES += \
     ../library/tbc/sourcevideo.cpp \
     ../library/tbc/vbidecoder.cpp \
     ../library/tbc/logging.cpp \
+    datatypes/dropouts.cpp \
     detectionsources.cpp \
     main.cpp \
     mainwindow.cpp \
@@ -30,6 +31,7 @@ HEADERS += \
     ../library/tbc/sourcevideo.h \
     ../library/tbc/vbidecoder.h \
     ../library/tbc/logging.h \
+    datatypes/dropouts.h \
     detectionsources.h \
     mainwindow.h \
     tbcsource.h

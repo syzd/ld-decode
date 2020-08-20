@@ -1,6 +1,6 @@
 /************************************************************************
 
-    tbcsource.h
+    dropouts.h
 
     ld-dropout-detect - LaserDisc dropout detection tools
     Copyright (C) 2020 Simon Inns
@@ -22,55 +22,38 @@
 
 ************************************************************************/
 
-#ifndef TBCSOURCE_H
-#define TBCSOURCE_H
+#ifndef DROPOUTS_H
+#define DROPOUTS_H
 
 #include <QApplication>
 #include <QDebug>
 #include <QtGlobal>
-#include <QImage>
+#include <QMetaType>
 
-#include "sourcevideo.h"
-#include "lddecodemetadata.h"
-#include "datatypes/dropouts.h"
-
-class TbcSource
+class Dropouts
 {
 public:
-    TbcSource();
-    ~TbcSource();
+    Dropouts() = default;
+    ~Dropouts() = default;
+    Dropouts(const Dropouts &) = default;
+    Dropouts &operator=(const Dropouts &) = default;
 
-    bool open(QString _inputFilename);
-    void close();
+    Dropouts(const QVector<qint32> &startx, const QVector<qint32> &endx, const QVector<qint32> &frameLine);
 
-    bool isValid();
-    bool isCav();
-    bool isPal();
+    qint32 size();
+    void concatenate();
 
-    void setReverseFieldOrder();
-
-    qint32 getStartVbiFrame();
-    qint32 getEndVbiFrame();
-    qint32 getNumberOfFrames();
-    bool isFrameAvailable(qint32 vbiFrameNumber);
-
-    QImage getFrameImage(qint32 vbiFrameNumber);
-    QVector<quint16> getFrameData(qint32 vbiFrameNumber);
-    Dropouts getFrameDropouts(qint32 vbiFrameNumber);
+    QVector<qint32> startx() const;
+    QVector<qint32> endx() const;
+    QVector<qint32> frameLine() const;
 
 private:
-    bool isSourceValid;
-    bool isSourceCav;
-    qint32 startVbiFrame;
-    qint32 endVbiFrame;
-    QString inputFilename;
-
-    SourceVideo sourceVideo;
-    LdDecodeMetaData ldDecodeMetaData;
-
-    void defaults();
-    bool determineDiscTypeAndFrames();
-    qint32 convertVbiFrameNumberToSequential(qint32 vbiFrameNumber);
+    QVector<qint32> m_startx;
+    QVector<qint32> m_endx;
+    QVector<qint32> m_frameLine;
 };
 
-#endif // TBCSOURCE_H
+Q_DECLARE_METATYPE(Dropouts);
+QDebug operator<<(QDebug dbg, const Dropouts &dropouts);
+
+#endif // DROPOUTS_H

@@ -273,9 +273,11 @@ qint32 TbcSource::convertVbiFrameNumberToSequential(qint32 vbiFrameNumber)
 
 // Get the drop out data for the requested VBI frame
 // Gets data for both fields and combines it into a single frame
-TbcSource::DropOuts TbcSource::getFrameDropouts(qint32 vbiFrameNumber)
+Dropouts TbcSource::getFrameDropouts(qint32 vbiFrameNumber)
 {
-    DropOuts dropOuts;
+    QVector<qint32> startx;
+    QVector<qint32> endx;
+    QVector<qint32> frameLine;
 
     if (isFrameAvailable(vbiFrameNumber)) {
         // Get the first and second field dropout data
@@ -285,30 +287,28 @@ TbcSource::DropOuts TbcSource::getFrameDropouts(qint32 vbiFrameNumber)
 
         // Odd lines
         for (qint32 i = 0; i < firstFieldDropOuts.startx.size(); i++) {
-            DropOuts tmpDo;
-            dropOuts.startx.append(firstFieldDropOuts.startx[i]);
-            dropOuts.endx.append(firstFieldDropOuts.endx[i]);
-            dropOuts.frameLine.append((firstFieldDropOuts.fieldLine[i] * 2) - 1);
+            startx.append(firstFieldDropOuts.startx[i]);
+            endx.append(firstFieldDropOuts.endx[i]);
+            frameLine.append((firstFieldDropOuts.fieldLine[i] * 2) - 1);
         }
 
         // Even lines
         for (qint32 i = 0; i < secondFieldDropOuts.startx.size(); i++) {
-            DropOuts tmpDo;
-            dropOuts.startx.append(secondFieldDropOuts.startx[i]);
-            dropOuts.endx.append(secondFieldDropOuts.endx[i]);
-            dropOuts.frameLine.append((secondFieldDropOuts.fieldLine[i] * 2));
+            startx.append(secondFieldDropOuts.startx[i]);
+            endx.append(secondFieldDropOuts.endx[i]);
+            frameLine.append((secondFieldDropOuts.fieldLine[i] * 2));
         }
 
-        qDebug() << "VBI frame number" << vbiFrameNumber << "contains" << dropOuts.startx.size() << "dropout records";
+        qDebug() << "VBI frame number" << vbiFrameNumber << "has" << firstFieldDropOuts.startx.size() + secondFieldDropOuts.startx.size() << "dropouts";
     } else {
         qDebug() << "Requested frame is not available from source, no dropout data available";
-    }
+    }    
 
-    return dropOuts;
+    return Dropouts(startx, endx, frameLine);
 }
 
 // Generate a QImage of the requested VBI frame
-QImage TbcSource::getFrameData(qint32 vbiFrameNumber)
+QImage TbcSource::getFrameImage(qint32 vbiFrameNumber)
 {
     // Get the metadata for the video parameters
     LdDecodeMetaData::VideoParameters videoParameters = ldDecodeMetaData.getVideoParameters();
@@ -329,14 +329,6 @@ QImage TbcSource::getFrameData(qint32 vbiFrameNumber)
         frameImage.fill(Qt::darkGray);
         return frameImage;
     }
-
-    // Range check the requested frame number
-    if (vbiFrameNumber > getEndVbiFrame() || vbiFrameNumber < getStartVbiFrame()) {
-        qWarning() << "Requested frame number is out of range for TBC source";
-        return frameImage;
-    }
-
-    qDebug() << "Requesting field data for frame number" << vbiFrameNumber << "- sequential frame" << convertVbiFrameNumberToSequential(vbiFrameNumber);
 
     // Get the field data
     SourceVideo::Data firstFieldData = sourceVideo.getVideoField(ldDecodeMetaData.getFirstFieldNumber(convertVbiFrameNumberToSequential(vbiFrameNumber)));
@@ -359,4 +351,44 @@ QImage TbcSource::getFrameData(qint32 vbiFrameNumber)
     }
 
     return frameImage;
+}
+
+// Get the raw data from the requested VBI frame
+QVector<quint16> TbcSource::getFrameData(qint32 vbiFrameNumber)
+{
+
+    // Get the metadata for the video parameters
+    LdDecodeMetaData::VideoParameters videoParameters = ldDecodeMetaData.getVideoParameters();
+
+    // Calculate the frame height
+    qint32 frameHeight = (videoParameters.fieldHeight * 2) - 1;
+
+    // Show debug information
+    qDebug().nospace() << "Generating frame data for frame " << vbiFrameNumber <<
+                " (" << videoParameters.fieldWidth << "x" << frameHeight << ")";
+
+    // Create a vector for the data
+    QVector<quint16> frameData;
+    frameData.fill(0, frameHeight * videoParameters.fieldWidth);
+
+    // Ensure the requested frame is available
+    if (!isFrameAvailable(vbiFrameNumber)) {
+        qDebug() << "Requested frame is not available from source";
+        return frameData;
+    }
+
+    // Get the field data
+    SourceVideo::Data firstFieldData = sourceVideo.getVideoField(ldDecodeMetaData.getFirstFieldNumber(convertVbiFrameNumberToSequential(vbiFrameNumber)));
+    SourceVideo::Data secondFieldData = sourceVideo.getVideoField(ldDecodeMetaData.getSecondFieldNumber(convertVbiFrameNumberToSequential(vbiFrameNumber)));
+
+    // Copy the data from both fields into the frame data
+    for (qint32 y = 0; y < frameHeight; y++) {
+        for (qint32 x = 0; x < videoParameters.fieldWidth; x++) {
+            // Get the 16-bit value
+            if (y % 2) frameData[(videoParameters.fieldWidth * y) + x] = secondFieldData[(videoParameters.fieldWidth * (y / 2)) + x] / 256;
+            else frameData[(videoParameters.fieldWidth * y) + x] = firstFieldData[(videoParameters.fieldWidth * (y / 2)) + x] / 256;
+        }
+    }
+
+    return frameData;
 }
