@@ -28,7 +28,9 @@
 #include <QMainWindow>
 #include <QLabel>
 #include <QPainter>
+
 #include "detectionsources.h"
+#include "detectors/clipdetector.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }

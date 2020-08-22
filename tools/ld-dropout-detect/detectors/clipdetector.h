@@ -1,6 +1,6 @@
 /************************************************************************
 
-    tbcsource.h
+    clipdetector.cpp
 
     ld-dropout-detect - LaserDisc dropout detection tools
     Copyright (C) 2020 Simon Inns
@@ -22,56 +22,22 @@
 
 ************************************************************************/
 
-#ifndef TBCSOURCE_H
-#define TBCSOURCE_H
+#ifndef CLIPDETECTOR_H
+#define CLIPDETECTOR_H
 
 #include <QApplication>
 #include <QDebug>
 #include <QtGlobal>
-#include <QImage>
 
-#include "sourcevideo.h"
 #include "lddecodemetadata.h"
 #include "datatypes/dropouts.h"
 
-class TbcSource
+class ClipDetector
 {
 public:
-    TbcSource();
-    ~TbcSource();
+    ClipDetector();
 
-    bool open(QString _inputFilename);
-    void close();
-
-    bool isValid();
-    bool isCav();
-    bool isPal();
-
-    void setReverseFieldOrder();
-
-    qint32 getStartVbiFrame();
-    qint32 getEndVbiFrame();
-    qint32 getNumberOfFrames();
-    bool isFrameAvailable(qint32 vbiFrameNumber);
-
-    QImage getFrameImage(qint32 vbiFrameNumber);
-    QVector<quint16> getFrameData(qint32 vbiFrameNumber);
-    Dropouts getFrameDropouts(qint32 vbiFrameNumber);
-    LdDecodeMetaData::VideoParameters getVideoParameters();
-
-private:
-    bool isSourceValid;
-    bool isSourceCav;
-    qint32 startVbiFrame;
-    qint32 endVbiFrame;
-    QString inputFilename;
-
-    SourceVideo sourceVideo;
-    LdDecodeMetaData ldDecodeMetaData;
-
-    void defaults();
-    bool determineDiscTypeAndFrames();
-    qint32 convertVbiFrameNumberToSequential(qint32 vbiFrameNumber);
+    Dropouts process(QVector<quint16> frameData, LdDecodeMetaData::VideoParameters videoParameters);
 };
 
-#endif // TBCSOURCE_H
+#endif // CLIPDETECTOR_H

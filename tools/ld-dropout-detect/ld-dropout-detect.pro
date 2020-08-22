@@ -22,6 +22,7 @@ SOURCES += \
     ../library/tbc/logging.cpp \
     datatypes/dropouts.cpp \
     detectionsources.cpp \
+    detectors/clipdetector.cpp \
     main.cpp \
     mainwindow.cpp \
     tbcsource.cpp
@@ -33,6 +34,7 @@ HEADERS += \
     ../library/tbc/logging.h \
     datatypes/dropouts.h \
     detectionsources.h \
+    detectors/clipdetector.h \
     mainwindow.h \
     tbcsource.h
 

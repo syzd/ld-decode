@@ -392,3 +392,9 @@ QVector<quint16> TbcSource::getFrameData(qint32 vbiFrameNumber)
 
     return frameData;
 }
+
+// Get the video parameter metadata for the TBC source
+LdDecodeMetaData::VideoParameters TbcSource::getVideoParameters()
+{
+    return ldDecodeMetaData.getVideoParameters();
+}

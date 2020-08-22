@@ -60,6 +60,7 @@ void MainWindow::initialiseGui()
     // Set up overlay mode combobox
     ui->overlayComboBox->addItem("None");
     ui->overlayComboBox->addItem("Current dropouts");
+    ui->overlayComboBox->addItem("Clip detector");
     // Single source clip analysis
     // luma/chroma diff
     // luma diff
@@ -145,24 +146,42 @@ void MainWindow::updateFrameViewer()
         qDebug() << "Updating frame viewer for source" << sourceNumber << "VBI frame number" << currentVbiFrameNumber;
         QImage frameImage = detectionSources.getDetectionSource(sourceNumber)->getFrameImage(currentVbiFrameNumber);
 
-        // Highlight dropouts
-        if (ui->overlayComboBox->currentText() == "Current dropouts") {
+        // Only highlight the frame image if the frame is available from the source
+        if (detectionSources.getDetectionSource(sourceNumber)->isFrameAvailable(currentVbiFrameNumber)) {
             // Get the frame dropout data
             Dropouts dropouts = detectionSources.getDetectionSource(sourceNumber)->getFrameDropouts(currentVbiFrameNumber);
 
-            // Create a painter object
-            QPainter imagePainter;
-            imagePainter.begin(&frameImage);
-
-            // Draw the drop out data for the frame
-            imagePainter.setPen(Qt::red);
-            for (qint32 dropoutIndex = 0; dropoutIndex < dropouts.size(); dropoutIndex++) {
-                imagePainter.drawLine(dropouts.startx()[dropoutIndex], dropouts.frameLine()[dropoutIndex] - 1,
-                                      dropouts.endx()[dropoutIndex], dropouts.frameLine()[dropoutIndex] - 1);
+            if (ui->overlayComboBox->currentText() == "Current dropouts") {
+                // Show current dropouts (without any additional detection)
+                // Don't need to do anything here
+                qDebug() << "Showing: Current dropouts";
+            } else if (ui->overlayComboBox->currentText() == "Clip detector") {
+                // Get dropouts from clip detector
+                ClipDetector clipDetector;
+                dropouts = clipDetector.process(detectionSources.getDetectionSource(sourceNumber)->getFrameData(currentVbiFrameNumber),
+                                                detectionSources.getDetectionSource(sourceNumber)->getVideoParameters());
+                qDebug() << "Showing: Clip detector";
             }
 
-            // End the painter object
-            imagePainter.end();
+            // Highlight dropout data on the image
+            if (ui->overlayComboBox->currentText() != "None") {
+                // Get the frame dropout data
+                Dropouts dropouts = detectionSources.getDetectionSource(sourceNumber)->getFrameDropouts(currentVbiFrameNumber);
+
+                // Create a painter object
+                QPainter imagePainter;
+                imagePainter.begin(&frameImage);
+
+                // Draw the drop out data for the frame
+                imagePainter.setPen(Qt::red);
+                for (qint32 dropoutIndex = 0; dropoutIndex < dropouts.size(); dropoutIndex++) {
+                    imagePainter.drawLine(dropouts.startx()[dropoutIndex], dropouts.frameLine()[dropoutIndex] - 1,
+                                          dropouts.endx()[dropoutIndex], dropouts.frameLine()[dropoutIndex] - 1);
+                }
+
+                // End the painter object
+                imagePainter.end();
+            }
         }
 
         // Display the QImage in the GUI
