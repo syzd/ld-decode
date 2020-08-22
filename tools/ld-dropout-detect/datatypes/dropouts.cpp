@@ -29,12 +29,18 @@ Dropouts::Dropouts(const QVector<qint32> &startx, const QVector<qint32> &endx, c
 {
 }
 
-// Custom debug streaming operator
-QDebug operator<<(QDebug dbg, const Dropouts &dropouts)
+// Assignment '=' operator
+Dropouts& Dropouts::operator=(const Dropouts &inDropouts)
 {
-    dbg.nospace() << "Dropouts(" << dropouts.startx().size() << " elements)";
+    // Do not allow assignment if both objects are the same
+    if (this != &inDropouts) {
+        // Copy the object's data
+        m_startx = inDropouts.m_startx;
+        m_endx = inDropouts.m_endx;
+        m_frameLine = inDropouts.m_frameLine;;
+    }
 
-    return dbg.maybeSpace();
+    return *this;
 }
 
 // Return the size of the Dropouts record
@@ -94,3 +100,13 @@ void Dropouts::concatenate()
 
     qDebug() << "Concatenated dropouts: was" << sizeAtStart << "now" << m_startx.size() << "dropouts";
 }
+
+// Custom debug streaming operator
+// THIS REALLY SHOULD LIST ALL DROPOUTS TO DEBUG
+QDebug operator<<(QDebug dbg, const Dropouts &dropouts)
+{
+    dbg.nospace() << "Dropouts(" << dropouts.startx().size() << " elements)";
+
+    return dbg.maybeSpace();
+}
+

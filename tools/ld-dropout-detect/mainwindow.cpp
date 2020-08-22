@@ -149,11 +149,12 @@ void MainWindow::updateFrameViewer()
         // Only highlight the frame image if the frame is available from the source
         if (detectionSources.getDetectionSource(sourceNumber)->isFrameAvailable(currentVbiFrameNumber)) {
             // Get the frame dropout data
-            Dropouts dropouts = detectionSources.getDetectionSource(sourceNumber)->getFrameDropouts(currentVbiFrameNumber);
+            Dropouts dropouts;
 
             if (ui->overlayComboBox->currentText() == "Current dropouts") {
                 // Show current dropouts (without any additional detection)
                 // Don't need to do anything here
+                 dropouts = detectionSources.getDetectionSource(sourceNumber)->getFrameDropouts(currentVbiFrameNumber);
                 qDebug() << "Showing: Current dropouts";
             } else if (ui->overlayComboBox->currentText() == "Clip detector") {
                 // Get dropouts from clip detector
@@ -165,9 +166,6 @@ void MainWindow::updateFrameViewer()
 
             // Highlight dropout data on the image
             if (ui->overlayComboBox->currentText() != "None") {
-                // Get the frame dropout data
-                Dropouts dropouts = detectionSources.getDetectionSource(sourceNumber)->getFrameDropouts(currentVbiFrameNumber);
-
                 // Create a painter object
                 QPainter imagePainter;
                 imagePainter.begin(&frameImage);

@@ -36,9 +36,9 @@ public:
     Dropouts() = default;
     ~Dropouts() = default;
     Dropouts(const Dropouts &) = default;
-    Dropouts &operator=(const Dropouts &) = default;
 
     Dropouts(const QVector<qint32> &startx, const QVector<qint32> &endx, const QVector<qint32> &frameLine);
+    Dropouts &operator=(const Dropouts &);
 
     qint32 size();
     void concatenate();
