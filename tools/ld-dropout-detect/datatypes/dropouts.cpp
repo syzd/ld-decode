@@ -44,7 +44,7 @@ Dropouts& Dropouts::operator=(const Dropouts &inDropouts)
 }
 
 // Return the size of the Dropouts record
-qint32 Dropouts::size()
+qint32 Dropouts::size() const
 {
     return m_startx.size();
 }
@@ -105,7 +105,12 @@ void Dropouts::concatenate()
 // THIS REALLY SHOULD LIST ALL DROPOUTS TO DEBUG
 QDebug operator<<(QDebug dbg, const Dropouts &dropouts)
 {
-    dbg.nospace() << "Dropouts(" << dropouts.startx().size() << " elements)";
+    dbg.nospace() << "Dropout object contains " << dropouts.size() << " entries:" << endl;
+
+    for (qint32 i = 0; i < dropouts.size(); i++) {
+        dbg.nospace() << "  [" << i << "] startx = " << dropouts.startx()[i] <<
+                         " - endx = " << dropouts.endx()[i] << " - line = " << dropouts.frameLine()[i] << endl;
+    }
 
     return dbg.maybeSpace();
 }

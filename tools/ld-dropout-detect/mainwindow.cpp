@@ -155,14 +155,15 @@ void MainWindow::updateFrameViewer()
                 // Show current dropouts (without any additional detection)
                 // Don't need to do anything here
                  dropouts = detectionSources.getDetectionSource(sourceNumber)->getFrameDropouts(currentVbiFrameNumber);
-                qDebug() << "Showing: Current dropouts";
             } else if (ui->overlayComboBox->currentText() == "Clip detector") {
                 // Get dropouts from clip detector
                 ClipDetector clipDetector;
                 dropouts = clipDetector.process(detectionSources.getDetectionSource(sourceNumber)->getFrameData(currentVbiFrameNumber),
                                                 detectionSources.getDetectionSource(sourceNumber)->getVideoParameters());
-                qDebug() << "Showing: Clip detector";
             }
+
+            // Show the dropouts in debug
+            qDebug() << "Dropouts:" << dropouts;
 
             // Highlight dropout data on the image
             if (ui->overlayComboBox->currentText() != "None") {

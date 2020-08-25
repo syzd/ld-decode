@@ -55,7 +55,7 @@ public:
     bool isFrameAvailable(qint32 vbiFrameNumber);
 
     QImage getFrameImage(qint32 vbiFrameNumber);
-    QVector<quint16> getFrameData(qint32 vbiFrameNumber);
+    SourceVideo::Data getFrameData(qint32 vbiFrameNumber);
     Dropouts getFrameDropouts(qint32 vbiFrameNumber);
     LdDecodeMetaData::VideoParameters getVideoParameters();
 

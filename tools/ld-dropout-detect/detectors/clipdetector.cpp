@@ -26,36 +26,45 @@
 
 ClipDetector::ClipDetector()
 {
-
 }
 
 // The clip detector looks for values that are outside the expected 0 to 100 IRE.
 // If a clip is found, the detector hunts back and forth looking for the
 // likely start and end point of the event.
 //
-// Note: This only works for the active area of the frame (since the other areas
-// are not 0-100 IRE) - so clip detection should not replace dropouts except in the
-// active area.
-Dropouts ClipDetector::process(QVector<quint16> frameData, LdDecodeMetaData::VideoParameters videoParameters)
+// Note: This only works in the active video area
+Dropouts ClipDetector::process(SourceVideo::Data frameData, LdDecodeMetaData::VideoParameters videoParameters)
 {
     QVector<qint32> startx;
     QVector<qint32> endx;
     QVector<qint32> frameLine;
 
+    // Get the actual 0 and 100 IRE points
+    quint16 whiteIre = static_cast<quint16>(videoParameters.white16bIre);
+    quint16 blackIre = static_cast<quint16>(videoParameters.black16bIre);
+
+    // Calculate the 5% over/undershoot IRE points
+    float ireRangePercent = (static_cast<float>(whiteIre - blackIre) / 100.0) * 8; // 8% range
+    quint16 whiteOvershoot = whiteIre + static_cast<quint16>(ireRangePercent);
+    quint16 blackUndershoot = blackIre - static_cast<quint16>(ireRangePercent);
+    if (whiteOvershoot > 65535) whiteOvershoot = 65535;
+    if (blackUndershoot < 0) blackUndershoot = 0;
+
+    qDebug() << "blackIRE =" << blackIre << "- whiteIRE =" << whiteIre;
+    qDebug() << "black undershoot =" << blackUndershoot << "- white overshoot =" << whiteOvershoot;
+
     // Process the fields one line at a time
     for (qint32 y = videoParameters.firstActiveFrameLine; y < videoParameters.lastActiveFrameLine ; y++) {
-        qint32 startOfLinePointer = y * videoParameters.fieldWidth;
+        for (qint32 x = videoParameters.activeVideoStart; x < videoParameters.activeVideoEnd; x++) {
+            // Get the 16-bit value for the source field, cast to 32 bit signed
+            quint16 sourceIre = static_cast<quint16>(frameData[(y * videoParameters.fieldWidth) + x]);
 
-        for (qint32 x = videoParameters.colourBurstStart; x < videoParameters.activeVideoEnd; x++) {
-            // Get the IRE value for the source field, cast to 32 bit signed
-            qint32 sourceIre = static_cast<qint32>(frameData[x + startOfLinePointer]);
-
-            // Check for a luma clip event
-            if ((sourceIre == 0) || (sourceIre == 65535)) {
+            // Check for a clip event
+            if ((sourceIre < blackUndershoot) || (sourceIre > whiteOvershoot)) {
                 // Signal has clipped, scan back and forth looking for the start
                 // and end points of the event (i.e. the point where the event
                 // goes back into the expected range)
-                qint32 range = 10; // maximum + and - scan range
+                qint32 range = 20; // maximum + and - scan range (in pixels)
                 qint32 minX = x - range;
                 if (minX < videoParameters.activeVideoStart) minX = videoParameters.activeVideoStart;
                 qint32 maxX = x + range;
@@ -64,26 +73,30 @@ Dropouts ClipDetector::process(QVector<quint16> frameData, LdDecodeMetaData::Vid
                 qint32 doStartx = x;
                 qint32 doEndx = x;
 
+                // Scan backwards
                 for (qint32 i = x; i > minX; i--) {
-                    qint32 ire = static_cast<qint32>(frameData[x + startOfLinePointer]);
-                    if (ire > 200 && ire < 65335) {
+                    quint16 ire = static_cast<quint16>(frameData[(y * videoParameters.fieldWidth) + i]);
+                    if (ire < blackIre || ire > whiteIre) {
                         doStartx = i;
                     }
                 }
 
+                // Scan forwards
                 for (qint32 i = x + 1; i < maxX; i++) {
-                    qint32 ire = static_cast<qint32>(frameData[x + startOfLinePointer]);
-                    if (ire > 200 && ire < 65335) {
+                    quint16 ire = static_cast<quint16>(frameData[(y * videoParameters.fieldWidth) + i]);
+                    if (ire < blackIre || ire > whiteIre) {
                         doEndx = i;
                     }
                 }
 
-                // Record the dropout
-                startx.append(doStartx);
-                endx.append(doEndx);
-                frameLine.append(y);
+                // Record the dropout (only if longer than 1 pixel)
+                if ((doEndx - doStartx) > 0) {
+                    startx.append(doStartx);
+                    endx.append(doEndx);
+                    frameLine.append(y + 1);
+                }
 
-                // Move to the end of the clipping event
+                // Move to the end of the check range
                 x = x + range;
             }
         }
@@ -91,3 +104,4 @@ Dropouts ClipDetector::process(QVector<quint16> frameData, LdDecodeMetaData::Vid
 
     return Dropouts(startx, endx, frameLine);
 }
+

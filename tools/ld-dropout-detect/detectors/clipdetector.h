@@ -30,14 +30,16 @@
 #include <QtGlobal>
 
 #include "lddecodemetadata.h"
+#include "sourcevideo.h"
 #include "datatypes/dropouts.h"
 
 class ClipDetector
 {
 public:
     ClipDetector();
+    Dropouts process(SourceVideo::Data frameData, LdDecodeMetaData::VideoParameters videoParameters);
 
-    Dropouts process(QVector<quint16> frameData, LdDecodeMetaData::VideoParameters videoParameters);
+private:
 };
 
 #endif // CLIPDETECTOR_H

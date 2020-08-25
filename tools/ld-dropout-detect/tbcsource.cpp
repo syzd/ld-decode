@@ -353,10 +353,9 @@ QImage TbcSource::getFrameImage(qint32 vbiFrameNumber)
     return frameImage;
 }
 
-// Get the raw data from the requested VBI frame
-QVector<quint16> TbcSource::getFrameData(qint32 vbiFrameNumber)
+// Get the field data from the requested VBI frame and combine into a frame of data
+SourceVideo::Data TbcSource::getFrameData(qint32 vbiFrameNumber)
 {
-
     // Get the metadata for the video parameters
     LdDecodeMetaData::VideoParameters videoParameters = ldDecodeMetaData.getVideoParameters();
 
@@ -367,9 +366,9 @@ QVector<quint16> TbcSource::getFrameData(qint32 vbiFrameNumber)
     qDebug().nospace() << "Generating frame data for frame " << vbiFrameNumber <<
                 " (" << videoParameters.fieldWidth << "x" << frameHeight << ")";
 
-    // Create a vector for the data
-    QVector<quint16> frameData;
-    frameData.fill(0, frameHeight * videoParameters.fieldWidth);
+    // Create a frame data object and resize/clear it
+    SourceVideo::Data frameData;
+    frameData.fill(0, (frameHeight * videoParameters.fieldWidth));
 
     // Ensure the requested frame is available
     if (!isFrameAvailable(vbiFrameNumber)) {
@@ -383,10 +382,10 @@ QVector<quint16> TbcSource::getFrameData(qint32 vbiFrameNumber)
 
     // Copy the data from both fields into the frame data
     for (qint32 y = 0; y < frameHeight; y++) {
-        for (qint32 x = 0; x < videoParameters.fieldWidth; x++) {
+        for (qint32 x = 0; x < videoParameters.fieldWidth; x++) {   
             // Get the 16-bit value
-            if (y % 2) frameData[(videoParameters.fieldWidth * y) + x] = secondFieldData[(videoParameters.fieldWidth * (y / 2)) + x] / 256;
-            else frameData[(videoParameters.fieldWidth * y) + x] = firstFieldData[(videoParameters.fieldWidth * (y / 2)) + x] / 256;
+            if (y % 2) frameData[(videoParameters.fieldWidth * y) + x] = secondFieldData[(videoParameters.fieldWidth * (y / 2)) + x];
+            else frameData[(videoParameters.fieldWidth * y) + x] = firstFieldData[(videoParameters.fieldWidth * (y / 2)) + x];
         }
     }
 

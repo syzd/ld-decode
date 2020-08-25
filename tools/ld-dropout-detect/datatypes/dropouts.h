@@ -40,7 +40,7 @@ public:
     Dropouts(const QVector<qint32> &startx, const QVector<qint32> &endx, const QVector<qint32> &frameLine);
     Dropouts &operator=(const Dropouts &);
 
-    qint32 size();
+    qint32 size() const;
     void concatenate();
 
     QVector<qint32> startx() const;
