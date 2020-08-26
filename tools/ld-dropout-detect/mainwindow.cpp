@@ -37,7 +37,6 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
     // Might need to delete sourceLabel objects here?
-
     delete ui;
 }
 

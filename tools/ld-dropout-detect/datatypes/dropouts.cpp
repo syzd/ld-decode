@@ -43,6 +43,14 @@ Dropouts& Dropouts::operator=(const Dropouts &inDropouts)
     return *this;
 }
 
+// Append a dropout
+void Dropouts::append(const qint32 startx, const qint32 endx, const qint32 frameLine)
+{
+    m_startx.append(startx);
+    m_endx.append(endx);
+    m_frameLine.append(frameLine);
+}
+
 // Return the size of the Dropouts record
 qint32 Dropouts::size() const
 {
@@ -67,6 +75,9 @@ QVector<qint32> Dropouts::frameLine() const
 
 // Method to concatenate dropouts on the same line that are close together
 // (to cut down on the amount of generated dropout data when processing noisy/bad sources)
+
+// TODO: Sort the DOs by frameLine otherwise this won't work correctly
+
 void Dropouts::concatenate()
 {
     qint32 sizeAtStart = m_startx.size();

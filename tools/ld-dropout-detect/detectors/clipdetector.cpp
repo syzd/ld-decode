@@ -35,9 +35,7 @@ ClipDetector::ClipDetector()
 // Note: This only works in the active video area
 Dropouts ClipDetector::process(SourceVideo::Data frameData, LdDecodeMetaData::VideoParameters videoParameters)
 {
-    QVector<qint32> startx;
-    QVector<qint32> endx;
-    QVector<qint32> frameLine;
+    Dropouts dropouts;
 
     // Get the actual 0 and 100 IRE points
     quint16 whiteIre = static_cast<quint16>(videoParameters.white16bIre);
@@ -47,13 +45,11 @@ Dropouts ClipDetector::process(SourceVideo::Data frameData, LdDecodeMetaData::Vi
     float ireRangePercent = (static_cast<float>(whiteIre - blackIre) / 100.0) * 8; // 8% range
     quint16 whiteOvershoot = whiteIre + static_cast<quint16>(ireRangePercent);
     quint16 blackUndershoot = blackIre - static_cast<quint16>(ireRangePercent);
-    if (whiteOvershoot > 65535) whiteOvershoot = 65535;
-    if (blackUndershoot < 0) blackUndershoot = 0;
 
     qDebug() << "blackIRE =" << blackIre << "- whiteIRE =" << whiteIre;
     qDebug() << "black undershoot =" << blackUndershoot << "- white overshoot =" << whiteOvershoot;
 
-    // Process the fields one line at a time
+    // Process the frame
     for (qint32 y = videoParameters.firstActiveFrameLine; y < videoParameters.lastActiveFrameLine ; y++) {
         for (qint32 x = videoParameters.activeVideoStart; x < videoParameters.activeVideoEnd; x++) {
             // Get the 16-bit value for the source field, cast to 32 bit signed
@@ -90,11 +86,7 @@ Dropouts ClipDetector::process(SourceVideo::Data frameData, LdDecodeMetaData::Vi
                 }
 
                 // Record the dropout (only if longer than 1 pixel)
-                if ((doEndx - doStartx) > 0) {
-                    startx.append(doStartx);
-                    endx.append(doEndx);
-                    frameLine.append(y + 1);
-                }
+                if ((doEndx - doStartx) > 0) dropouts.append(doStartx, doEndx, y+1);
 
                 // Move to the end of the check range
                 x = x + range;
@@ -102,6 +94,6 @@ Dropouts ClipDetector::process(SourceVideo::Data frameData, LdDecodeMetaData::Vi
         }
     }
 
-    return Dropouts(startx, endx, frameLine);
+    return dropouts;
 }
 

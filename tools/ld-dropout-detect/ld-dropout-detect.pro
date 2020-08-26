@@ -23,6 +23,7 @@ SOURCES += \
     datatypes/dropouts.cpp \
     detectionsources.cpp \
     detectors/clipdetector.cpp \
+    detectors/diffdetector.cpp \
     main.cpp \
     mainwindow.cpp \
     tbcsource.cpp
@@ -35,6 +36,7 @@ HEADERS += \
     datatypes/dropouts.h \
     detectionsources.h \
     detectors/clipdetector.h \
+    detectors/diffdetector.h \
     mainwindow.h \
     tbcsource.h
 

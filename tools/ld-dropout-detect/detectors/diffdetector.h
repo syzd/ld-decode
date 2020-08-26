@@ -1,6 +1,6 @@
 /************************************************************************
 
-    dropouts.h
+    diffdetector.h
 
     ld-dropout-detect - LaserDisc dropout detection tools
     Copyright (C) 2020 Simon Inns
@@ -22,39 +22,28 @@
 
 ************************************************************************/
 
-#ifndef DROPOUTS_H
-#define DROPOUTS_H
+#ifndef DIFFDETECTOR_H
+#define DIFFDETECTOR_H
 
 #include <QApplication>
 #include <QDebug>
 #include <QtGlobal>
-#include <QMetaType>
+#include <QtMath>
 
-class Dropouts
+#include "lddecodemetadata.h"
+#include "sourcevideo.h"
+#include "datatypes/dropouts.h"
+
+class DiffDetector
 {
 public:
-    Dropouts() = default;
-    ~Dropouts() = default;
-    Dropouts(const Dropouts &) = default;
+    DiffDetector();
 
-    Dropouts(const QVector<qint32> &startx, const QVector<qint32> &endx, const QVector<qint32> &frameLine);
-    Dropouts &operator=(const Dropouts &);
-
-    void append(const qint32 startx, const qint32 endx, const qint32 frameLine);
-    qint32 size() const;
-    void concatenate();
-
-    QVector<qint32> startx() const;
-    QVector<qint32> endx() const;
-    QVector<qint32> frameLine() const;
+    Dropouts process(QVector<SourceVideo::Data> frameData, LdDecodeMetaData::VideoParameters videoParameters);
 
 private:
-    QVector<qint32> m_startx;
-    QVector<qint32> m_endx;
-    QVector<qint32> m_frameLine;
+    quint16 median(QVector<quint16> v);
+    float convertLinearToBrightness(quint16 value, quint16 black16bIre, quint16 white16bIre, bool isSourcePal);
 };
 
-Q_DECLARE_METATYPE(Dropouts);
-QDebug operator<<(QDebug dbg, const Dropouts &dropouts);
-
-#endif // DROPOUTS_H
+#endif // DIFFDETECTOR_H
